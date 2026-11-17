@@ -1,0 +1,895 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Control de Calidad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: una columna, superficies planas, líneas finas, un solo acento azul; mono para numeración. */
+:root{
+  --bg:#f6f7f8;--surface:#ffffff;--line:#dde1e5;--fg:#14181d;--muted:#5a6672;
+  --accent:#2457c5;--accent-ink:#ffffff;--sel:#e8eefb;
+  --ok:#17744a;--ok-bg:#e6f4ec;--bad:#b3362a;--bad-bg:#fbeae8;
+  --sans:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1215;--surface:#161a1e;--line:#272d33;--fg:#e7eaed;--muted:#8f9ba6;
+    --accent:#7ea3f2;--accent-ink:#0f1215;--sel:#1b2536;
+    --ok:#4cc38a;--ok-bg:#12261c;--bad:#f0776b;--bad-bg:#2b1613;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1215;--surface:#161a1e;--line:#272d33;--fg:#e7eaed;--muted:#8f9ba6;
+  --accent:#7ea3f2;--accent-ink:#0f1215;--sel:#1b2536;
+  --ok:#4cc38a;--ok-bg:#12261c;--bad:#f0776b;--bad-bg:#2b1613;color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.5;
+  padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--bg);z-index:10}
+.wrap{max-width:820px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.25}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:650}
+h3{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+p{margin:0}
+.muted{color:var(--muted)}
+header.top{display:flex;flex-direction:column;gap:14px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:20px}
+header.top p{color:var(--muted);font-size:13px;margin-top:2px}
+nav{display:flex;flex-wrap:wrap;gap:4px}
+nav a{padding:6px 12px;border-radius:6px;color:var(--muted);text-decoration:none;font-weight:500;font-size:14px}
+nav a:hover{color:var(--fg)}
+nav a.on{background:var(--fg);color:var(--bg)}
+nav a:focus-visible,.btn:focus-visible,.chip:focus-visible,.opt:focus-visible,.pt:focus-visible,.pd:focus-visible,.flash:focus-visible,.step:focus-visible,.mcard:focus-visible,.tick:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section.blk{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.btn{font:inherit;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:9px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:13px;font-weight:500;border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:5px 11px;border-radius:999px;cursor:pointer}
+.chip.on{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;align-self:flex-start}
+.seg button{font:inherit;font-size:14px;font-weight:500;background:var(--surface);color:var(--muted);border:0;padding:7px 16px;cursor:pointer}
+.seg button.on{background:var(--fg);color:var(--bg)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:28px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.stat b{display:block;font-family:var(--mono);font-size:24px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.day{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.day h3{margin-bottom:-4px}
+.day h2{font-size:16px}
+.step{font:inherit;text-align:left;display:flex;justify-content:space-between;gap:8px;width:100%;background:transparent;border:0;border-top:1px solid var(--line);padding:9px 0 0;color:var(--fg);cursor:pointer;font-size:14px}
+.step span:last-child{color:var(--muted)}
+.step:hover span:last-child{color:var(--accent)}
+.mgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.mcard{font:inherit;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px 16px;cursor:pointer;color:var(--fg);display:flex;flex-direction:column;gap:2px}
+.mcard:hover{border-color:var(--muted)}
+.mcard b{font-weight:600}
+.mcard small{color:var(--muted);font-size:13px}
+.num{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;padding:12px 14px;border-top:1px solid var(--line);align-items:start}
+.row:first-child{border-top:0}
+.row b{font-weight:600}
+.row .def{margin-top:2px;color:var(--fg)}
+.row .def.mask:not(.show){color:transparent;background:var(--line);border-radius:4px;user-select:none;cursor:pointer}
+.row.known b{color:var(--ok)}
+.tick{font:inherit;font-size:12px;border:1px solid var(--line);background:transparent;color:var(--muted);border-radius:999px;padding:3px 10px;cursor:pointer;white-space:nowrap}
+.row.known .tick{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.flash{font:inherit;color:inherit;text-align:left;width:100%;min-height:230px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:24px;cursor:pointer;display:flex;flex-direction:column;justify-content:center;gap:12px}
+.flash small{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.flash .big{font-size:26px;font-weight:600;line-height:1.25;text-wrap:balance}
+.flash .big.long{font-size:18px;font-weight:500}
+.flash .back{border-top:1px solid var(--line);padding-top:12px;font-size:17px}
+.flash .back.short{font-size:22px;font-weight:600}
+.bar{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent)}
+.qhead{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--muted)}
+.qhead .num{color:var(--muted)}
+.qtag{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+h2.q{font-size:19px;font-weight:600;line-height:1.35}
+blockquote{margin:0;padding:12px 14px;border-left:3px solid var(--line);background:var(--surface);border-radius:0 6px 6px 0;font-size:16px}
+.opts{display:flex;flex-direction:column;gap:8px}
+.opt{font:inherit;text-align:left;display:grid;grid-template-columns:26px minmax(0,1fr);gap:8px;align-items:start;width:100%;background:var(--surface);border:1px solid var(--line);color:var(--fg);padding:11px 14px;border-radius:6px;cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--muted)}
+.opt .k{font-family:var(--mono);font-size:13px;color:var(--muted);padding-top:1px}
+.opt.ok{border-color:var(--ok);background:var(--ok-bg)}
+.opt.bad{border-color:var(--bad);background:var(--bad-bg)}
+.opt:disabled{cursor:default;color:var(--fg)}
+.fillrow{display:flex;flex-wrap:wrap;gap:8px}
+.fillrow input{flex:1 1 220px;min-width:0;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg)}
+.fb{border-radius:6px;padding:12px 14px;font-size:14px;border:1px solid var(--line)}
+.fb.ok{background:var(--ok-bg);border-color:var(--ok)}
+.fb.bad{background:var(--bad-bg);border-color:var(--bad)}
+.fb b{display:block;margin-bottom:2px}
+.score{font-family:var(--mono);font-size:44px;font-weight:500;line-height:1}
+.score span{font-size:22px;color:var(--muted)}
+.res{display:flex;flex-direction:column;gap:10px}
+.miss{padding:12px 14px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.miss .a{color:var(--ok)}
+.miss .u{color:var(--bad)}
+.selbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding:10px 0;border-bottom:1px solid var(--line);font-size:14px;color:var(--muted)}
+.selbar b{color:var(--fg)}
+.pgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px}
+.pgrid>div{display:flex;flex-direction:column;gap:8px;min-width:0}
+@media (max-width:640px){.pgrid{grid-template-columns:1fr}}
+.pt,.pd{font:inherit;text-align:left;width:100%;display:grid;grid-template-columns:26px minmax(0,1fr) 28px;gap:8px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer;font-size:14px}
+.pt .n,.pd .n{font-family:var(--mono);font-size:13px;color:var(--muted)}
+.pt .bdg,.pd .bdg{font-family:var(--mono);font-size:13px;font-weight:500;text-align:center;border-radius:4px;min-height:22px;line-height:22px}
+.pt.paired .bdg,.pd.paired .bdg{background:var(--fg);color:var(--bg)}
+.pt.sel{border-color:var(--accent);background:var(--sel)}
+.pt.paired,.pd.paired{border-color:var(--muted)}
+.pt.ok,.pd.ok{border-color:var(--ok);background:var(--ok-bg)}
+.pt.bad,.pd.bad{border-color:var(--bad);background:var(--bad-bg)}
+.pt small{display:block;color:var(--bad);margin-top:2px}
+.sheet{display:flex;flex-direction:column;gap:28px}
+.sheet section{display:flex;flex-direction:column;gap:10px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:9px 12px;border-top:1px solid var(--line);vertical-align:top}
+tr:first-child th,tr:first-child td{border-top:0}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;white-space:nowrap}
+td code,.f{font-family:var(--mono);font-size:13px}
+.cols3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.cols3 .card ul,.sheet ul,.sheet ol{margin:6px 0 0;padding-left:18px}
+.cols3 .card li,.sheet li{margin:2px 0}
+.tag{font-family:var(--mono);font-size:12px;padding:1px 6px;border-radius:4px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+.tag.rej{color:var(--bad);border-color:var(--bad)}
+.tag.adv{color:var(--muted)}
+.empty{padding:20px;border:1px dashed var(--line);border-radius:8px;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+<div class="wrap">
+  <header class="top">
+    <div><h1>Control de Calidad</h1><p>Parcial · 56 conceptos · Clase 1 · Clase 3</p></div>
+    <nav id="nav" aria-label="Secciones"></nav>
+  </header>
+  <main id="app"></main>
+</div>
+<script>
+(function(){
+'use strict';
+/* ---------- Datos: 56 conceptos ---------- */
+const C=[
+["Aleatorio","Que ocurre de manera impredecible, sin seguir un patrón o dirección definida."],
+["Calibración","Operación que establece la relación entre los valores de referencia y las indicaciones de un instrumento de medición."],
+["Calibrador","Material con una concentración o valor conocido que se utiliza para ajustar un sistema de medición."],
+["Conmutabilidad","Capacidad de un material de comportarse de manera similar a las muestras de pacientes en diferentes procedimientos de medición."],
+["Corrida analítica","Conjunto de análisis realizados bajo condiciones definidas durante un período determinado, en los que se evalúa el desempeño del sistema."],
+["Control de calidad","Conjunto de procedimientos destinados a detectar, evaluar y corregir errores para garantizar resultados confiables."],
+["Control valorado","Material de control que tiene valores o concentraciones asignados conocidos, utilizados para evaluar el desempeño analítico."],
+["Criterios de calidad","Requisitos o condiciones establecidos para determinar si un resultado o proceso cumple con los niveles de calidad aceptables."],
+["Control de proceso","Supervisión de las actividades de un proceso para comprobar que funcionan dentro de los parámetros establecidos."],
+["Error aleatorio","Variación impredecible de los resultados que afecta principalmente la precisión de las mediciones."],
+["Error sistemático","Desviación constante o predecible de los resultados en una misma dirección, que afecta principalmente la exactitud."],
+["Gestión de calidad","Actividades coordinadas para dirigir y controlar una organización en relación con la calidad."],
+["Garantía externa de calidad","Evaluación externa del desempeño del laboratorio mediante comparación con otros laboratorios o valores de referencia."],
+["Grupo par","Conjunto de laboratorios que utilizan métodos o sistemas de medición comparables para evaluar sus resultados."],
+["Incertidumbre de medida","Parámetro que expresa la duda asociada al resultado de una medición."],
+["Indicador de calidad","Medida utilizada para evaluar y supervisar el cumplimiento de los objetivos de calidad."],
+["Magnitud","Propiedad de un fenómeno, cuerpo o sustancia que puede expresarse cuantitativamente."],
+["Mensurando","Magnitud específica que se desea medir."],
+["Patrón de medición","Referencia establecida que se utiliza para definir, realizar o reproducir una unidad de medida o un valor."],
+["Procedimiento de medida","Descripción detallada de las operaciones utilizadas para realizar una medición."],
+["Pruebas de evaluación externa de calidad","Pruebas en las que un laboratorio analiza muestras proporcionadas por una entidad externa y compara sus resultados con los de otros laboratorios o valores establecidos."],
+["Reglas de control","Criterios estadísticos utilizados para determinar si una corrida analítica se acepta o se rechaza."],
+["Sesgo","Diferencia entre el resultado analítico esperado y el valor de referencia aceptado."],
+["Trazabilidad","Propiedad de un resultado de medición que permite relacionarlo con una referencia mediante una cadena documentada e ininterrumpida de calibraciones."],
+["Variable","Característica que puede tomar diferentes valores o categorías."],
+["Variable cuantitativa","Variable que se expresa mediante valores numéricos."],
+["Variable cualitativa","Variable que representa características o categorías no numéricas."],
+["Veracidad","Grado de concordancia entre el promedio de mediciones repetidas y un valor de referencia aceptado."],
+["Cobertura","Alcance o proporción de los elementos, procesos o actividades que están incluidos dentro de un sistema o servicio."],
+["Confiabilidad","Capacidad de un método o sistema para producir resultados consistentes y fiables."],
+["Control de primera opinión","Material de control diseñado para utilizarse con un sistema analítico específico y cuya evaluación depende principalmente del fabricante."],
+["Control de tercera opinión","Material de control independiente del fabricante, que permite evaluar el desempeño del sistema analítico de manera independiente."],
+["Dato aberrante","Resultado que se encuentra considerablemente alejado del comportamiento esperado del conjunto de datos."],
+["Desviación estándar","Medida estadística que indica cuánto se dispersan los resultados respecto a la media."],
+["Error total analítico","Combinación del error aleatorio y el error sistemático presentes en una medición."],
+["Error total permitido","Límite máximo de error que puede aceptarse en un resultado sin comprometer su utilidad clínica."],
+["Especificidad","Capacidad de una prueba para identificar correctamente a las personas que no presentan una enfermedad."],
+["Estado del arte","Conocimiento más actualizado y avanzado que existe sobre un tema o procedimiento."],
+["Exactitud","Grado de concordancia entre un resultado de medición y el valor verdadero o de referencia aceptado."],
+["Falso negativo","Resultado negativo en una persona que realmente presenta la enfermedad o condición evaluada."],
+["Falso positivo","Resultado positivo en una persona que realmente no presenta la enfermedad o condición evaluada."],
+["Imprecisión","Grado de dispersión entre resultados obtenidos al repetir una misma medición."],
+["Interensayo","Variabilidad observada entre diferentes ensayos o corridas analíticas."],
+["Intraensayo","Variabilidad observada entre mediciones repetidas dentro de un mismo ensayo o corrida analítica."],
+["Linealidad","Capacidad de un método para producir resultados proporcionales a la concentración del analito dentro de un intervalo determinado."],
+["Media","Promedio aritmético obtenido al sumar todos los valores y dividirlos entre el número de observaciones."],
+["Moda","Valor que aparece con mayor frecuencia en un conjunto de datos."],
+["Mediana","Valor central de un conjunto de datos ordenados."],
+["Multicalibrador","Material que contiene varios analitos o concentraciones asignadas y permite calibrar diferentes parámetros de un sistema analítico."],
+["Índice de desviación estándar (IDS)","Medida que expresa cuántas desviaciones estándar separan un resultado de la media o valor objetivo."],
+["Nivel sigma","Indicador estadístico que expresa el desempeño de un proceso en función de sus defectos y variabilidad respecto a los límites de especificación."],
+["Estándar","Material o referencia con un valor conocido que se utiliza como base para comparar o establecer mediciones."],
+["Variabilidad analítica","Variación de los resultados causada por el método, instrumento, reactivos u otras condiciones del proceso analítico."],
+["Variabilidad biológica","Variación natural de los componentes biológicos dentro de un mismo individuo o entre diferentes individuos."],
+["Validación de métodos","Proceso que demuestra mediante evidencias que un método es adecuado para el uso previsto."],
+["Target Score","Puntuación objetivo o valor de referencia que se utiliza para evaluar el desempeño alcanzado respecto a una meta establecida."]
+];
+
+/* ---------- Clase 1: opción múltiple [pregunta, correcta, 3 incorrectas] ---------- */
+const M1=[
+["La calidad de un laboratorio se define por…","la exactitud, fiabilidad y puntualidad de los resultados","el costo, la rapidez y el volumen de pruebas","el tamaño, el personal y la tecnología","la cantidad de normas ISO que cumple"],
+["¿Quién definió la calidad como «apto para su uso»?","Juran","Crosby","Deming","ANSI/ASQC"],
+["¿Quién definió la calidad como «conformidad con los requisitos»?","Crosby","Juran","Deming","Shewhart"],
+["¿Quién afirma que la calidad debe estar dirigida a las necesidades del cliente?","Deming","Juran","Crosby","Ishikawa"],
+["¿Quién define la calidad como la totalidad de rasgos y características de un producto o servicio que satisfacen necesidades dadas?","ANSI/ASQC","Juran","Crosby","Deming"],
+["Un 99% de exactitud puede parecer aceptable, pero…","el 1% de error puede ser significativo en sistemas con muchas incidencias","el 1% se puede ignorar siempre","implica que el laboratorio no tiene errores","solo aplica a la fase postanalítica"],
+["¿Cuál es un ejemplo de fase preanalítica?","Transporte de muestras","Validación técnica","Archivo de datos","Elaboración de informes"],
+["¿Cuál es un ejemplo de fase analítica?","Validación técnica","Recepción de muestras","Almacén de resultados","Siembras"],
+["¿Cuál es un ejemplo de fase postanalítica?","Almacén de resultados","Solicitud de análisis","Extracción de muestras","Urgencias"],
+["Según las normas ISO, los procesos del laboratorio se dividen en…","3 fases","2 fases","4 fases","5 fases"],
+["Una muestra dañada durante el transporte es un error de la fase…","preanalítica","analítica","postanalítica","no afecta al resultado"],
+["Un informe retrasado, perdido o mal escrito es un error de la fase…","postanalítica","preanalítica","analítica","de calibración"],
+["¿Cuál NO es una consecuencia negativa de un error de laboratorio?","Reducción de costos y de tiempo","Tratamientos innecesarios","Retrasos en el diagnóstico correcto","Pruebas diagnósticas adicionales innecesarias"],
+["Un SGC se define como…","las actividades coordinadas para dirigir y controlar una organización con respecto a la calidad","el conjunto de pruebas de evaluación externa","la verificación de calibradores y controles","el archivo de todos los informes emitidos"],
+["¿Cuántos elementos clave tiene el sistema de la calidad (modelo CLSI)?","12","8","10","15"],
+["El producto principal del laboratorio es…","la información (informes de análisis)","los reactivos","las muestras","los equipos"],
+["Una «incidencia» es…","un error o evento no deseado","un resultado crítico","una auditoría externa","un cambio de lote"],
+["El recurso más importante del laboratorio es…","el personal competente y motivado","los equipos","los reactivos","las instalaciones"],
+["¿Qué elemento compara el rendimiento del laboratorio con normas u otros laboratorios?","Evaluación","Organización","Gestión de incidencias","Servicio al cliente"],
+["¿Qué elemento explica «cómo hacer las cosas»?","Documentos y registros","Gestión de la información","Evaluación","Compras e inventario"],
+["¿Qué elemento incluye seguridad, contención y ergonomía?","Seguridad e instalaciones","Equipos","Organización","Personal"],
+["La gestión de la información debe garantizar…","exactitud, confidencialidad y accesibilidad","rapidez, volumen y costo","simplicidad y formato","solo formato electrónico"],
+["El laboratorio es, en esencia, una empresa de…","servicios","manufactura","comercio","construcción"],
+["La meta principal del SGC es…","la mejora continua y sistemática de los procesos","reducir el personal","eliminar la fase preanalítica","aumentar el volumen de pruebas"],
+["¿Qué ofrece un SGC?","la posibilidad de un laboratorio de alta calidad que detecta y previene la recurrencia de errores","la garantía de un laboratorio sin errores","la eliminación del control de calidad","resultados válidos sin documentación"],
+["Estrategia de implementación recomendada…","empezar con cambios sencillos de gran impacto, de forma gradual","implementar los 12 elementos de golpe","implementar solo los equipos","esperar a una auditoría externa"],
+["Shewhart desarrolló en la década de 1920…","un método para la gestión de procesos estadísticos","la norma ISO 15189","el modelo de los 12 elementos","el análisis Seis Sigma"],
+["El control de calidad se aplicó en laboratorios a partir de la década de…","1940","1920","1960","1990"],
+["Galvin trabajó recientemente sobre…","la reducción de errores a microescala","los gráficos de control","la ergonomía","la norma ISO 15189"],
+["La gestión de la calidad se desarrolló a lo largo de aproximadamente…","80 años","10 años","30 años","200 años"],
+["ISO 15189 se refiere a…","laboratorios médicos: requisitos de calidad y competencia","competencia de laboratorios de ensayo y calibración","requisitos generales del SGC","gestión ambiental"],
+["ISO/IEC 17025 se refiere a…","competencia de laboratorios de ensayo y calibración","laboratorios médicos","requisitos generales del SGC","seguridad del paciente"],
+["ISO 9001:2015 establece…","requisitos generales del sistema de gestión de la calidad","requisitos para laboratorios médicos","competencia de laboratorios de calibración","normas de bioseguridad"],
+["CLSI se llamaba anteriormente…","NCCLS","CAP","COLA","ANSI"]
+];
+
+/* ---------- Clase 3: opción múltiple ---------- */
+const M3=[
+["El control de calidad interno (CCI) es…","prospectivo","retrospectivo","exclusivo de la fase postanalítica","comparativo entre laboratorios"],
+["El control de calidad externo (CCE) es…","retrospectivo","prospectivo","realizado junto con las muestras","exclusivo del fabricante"],
+["El CCI vigila principalmente…","la precisión y estabilidad del sistema","la exactitud frente a otros laboratorios","solo la fase preanalítica","la puntualidad de los informes"],
+["El CCE evalúa principalmente…","la exactitud y permite comparar entre laboratorios","la precisión diaria","la estabilidad de los reactivos","la calidad de la extracción"],
+["Los calibradores se utilizan para…","ajustar o calibrar el sistema de medición","comprobar de forma independiente el sistema","calcular la desviación estándar","comparar laboratorios"],
+["Los controles se analizan para…","comprobar de forma independiente que el sistema funciona correctamente","configurar el instrumento antes del análisis","reemplazar al calibrador","definir la unidad de medida"],
+["¿Qué afirmación sobre calibradores y controles es correcta?","El control debe ser distinto del calibrador para evaluar el sistema de forma independiente","Calibrador y control deben ser el mismo material","El control sirve para ajustar el instrumento","El calibrador verifica el desempeño diario"],
+["El material de control debe incluir niveles cercanos a…","los puntos de decisión médica","el límite de detección únicamente","valores imposibles en pacientes","la concentración exacta del calibrador"],
+["Caducidad mínima aproximada recomendada de un control…","un año","un mes","seis meses","cinco años"],
+["En controles liofilizados, el pipeteo incorrecto al reconstituir…","puede alterar la concentración del analito","no afecta al resultado","solo altera el color","solo afecta la caducidad"],
+["El control de primera opinión…","está diseñado para un sistema específico y su evaluación depende del fabricante","es independiente del fabricante","es el más sensible a cambios de reactivos","tiene siempre matriz humana"],
+["Una característica del control de tercera opinión es que…","es independiente del fabricante y más sensible a cambios en instrumentos y reactivos","imita el comportamiento del calibrador","ofrece un CCI limitado","exige un lote nuevo con cada lote de reactivo"],
+["¿Qué control permite usar el mismo lote durante un periodo prolongado?","De tercera opinión","De primera opinión","Un calibrador","Ninguno"],
+["¿Con qué control se pueden aplicar herramientas como Seis Sigma?","De tercera opinión","De primera opinión","Un calibrador","Un estándar del fabricante"],
+["¿Cuántos días de datos, como mínimo, se analizan para establecer media y DE?","20","5","10","50"],
+["Si hay más de dos valores atípicos entre los 20 resultados…","los datos no deben utilizarse; se corrige el problema y se repite","se eliminan todos y se continúa","se usa igual la media","se baja el nivel de control"],
+["Después de calcular media, DE, CV (e IDS) se…","elabora el gráfico de Levey-Jennings","aplican las reglas de Westgard directamente","estandariza el procedimiento","analizan los controles 20 días"],
+["¿Qué medida de tendencia central se usa principalmente en el CC?","La media","La moda","La mediana","El rango"],
+["En una distribución normal, ±1s abarca aproximadamente…","68.3%","95.5%","99.7%","50%"],
+["En una distribución normal, ±2s abarca aproximadamente…","95.5%","68.3%","99.7%","90%"],
+["En una distribución normal, ±3s abarca aproximadamente…","99.7%","68.3%","95.5%","99.9%"],
+["Sesgo =","resultado esperado − valor de referencia","(s / media) × 100","media + 2s","suma de valores / n"],
+["La DE muestral divide entre n−1 porque…","la media reduce en uno los grados de libertad","n−1 es siempre más grande","simplifica el cálculo","lo exige la norma ISO"],
+["CV (%) =","(s / media) × 100","(media / s) × 100","s × media","media − s"],
+["Media 4.1 y s 0.1: el CV es aproximadamente…","2.44%","4.1%","0.24%","24.4%"],
+["Media 4.1 y s 0.1: el intervalo ±2s es…","3.9 a 4.3","4.0 a 4.2","3.8 a 4.4","3.7 a 4.5"],
+["Media 4.1 y s 0.1: el intervalo ±3s es…","3.8 a 4.4","3.9 a 4.3","4.0 a 4.2","3.7 a 4.5"],
+["Referencia general de CV deseable…","menor que 5%","mayor que 10%","exactamente 0%","mayor que 20%"],
+["La desviación estándar mide…","la dispersión alrededor de la media (precisión)","la cercanía al valor verdadero","el promedio de los datos","el valor más frecuente"],
+["Resultados muy agrupados pero alejados del valor verdadero son…","precisos pero poco exactos","exactos y precisos","exactos pero poco precisos","poco exactos y poco precisos"],
+["En el gráfico de Levey-Jennings, la línea central representa…","la media","la mediana","el límite de 3s","el sesgo"],
+["Un desplazamiento se observa cuando…","varios resultados consecutivos quedan a un lado de la media","los resultados suben o bajan progresivamente","aumenta la dispersión","los puntos se distribuyen al azar"],
+["Una tendencia se observa cuando…","los resultados aumentan o disminuyen progresivamente","varios resultados quedan de un solo lado","un solo punto sale de 3s","la media no cambia"],
+["El error aleatorio afecta principalmente…","la precisión","la exactitud","la calibración","la trazabilidad"],
+["El error sistemático afecta principalmente…","la exactitud","la precisión","la fase postanalítica","el tamaño de muestra"],
+["Causa típica de error sistemático…","cambio de lote de reactivo o calibración incorrecta","variaciones en el pipeteo","fluctuaciones ocasionales de temperatura","variaciones en la intensidad de la luz"],
+["Causa típica de error aleatorio…","variaciones en el pipeteo","calibración incorrecta","cambio de lote de calibrador","preparación incorrecta de reactivos"],
+["La regla 1_3s indica que…","un resultado supera ±3s (rechazo, generalmente error aleatorio)","dos resultados consecutivos superan 2s del mismo lado","cuatro resultados consecutivos superan 1s","diez resultados consecutivos quedan del mismo lado"],
+["La regla 1_2s es…","de advertencia","de rechazo por error sistemático","de rechazo por error aleatorio","aplicable solo entre corridas"],
+["La regla 2_2s significa…","dos resultados consecutivos superan 2s del mismo lado de la media","un resultado supera 2s","dos controles difieren más de 4s","dos resultados superan 3s"],
+["La regla R_4s significa…","la diferencia entre dos controles de la misma corrida supera 4s","cuatro resultados consecutivos superan 1s","cuatro corridas rechazadas","un resultado supera 4s"],
+["La regla 4_1s significa…","cuatro resultados consecutivos superan 1s del mismo lado","un resultado supera 4s","cuatro resultados superan 3s","diez resultados quedan del mismo lado"],
+["La regla 10_x significa…","diez resultados consecutivos del mismo lado de la media","diez controles superan 1s","diez corridas sin error","un resultado a 10s"],
+["¿Qué regla se aplica solo entre dos controles de una misma corrida?","R_4s","2_2s","4_1s","10_x"],
+["¿Cuál regla es solo una advertencia?","1_2s","1_3s","2_2s","10_x"],
+["Reglas que sugieren error sistemático…","2_2s, 4_1s y 10_x","1_3s y R_4s","solo 1_2s","R_4s y 1_2s"],
+["Cuando se infringe una regla de rechazo…","no se liberan resultados; se investiga, corrige y repiten los controles","se liberan resultados y se investiga después","se ignora si la media es correcta","se cambia la desviación estándar"],
+["Error alfa:","falso rechazo de una corrida aceptable","falsa aceptación de una corrida con problema","no realizar el control de calidad","no interpretar los resultados del control"],
+["Error beta:","falsa aceptación de una corrida con problema","falso rechazo de una corrida aceptable","no realizar el control de calidad","no interpretar los resultados del control"],
+["Error imperdonable:","no realizar el control de calidad","realizar el control sin revisarlo","falso rechazo de una corrida","falsa aceptación de una corrida"],
+["Error perverso:","realizar el control pero no revisar ni interpretar sus resultados","no realizar el control de calidad","falso rechazo de una corrida","falsa aceptación de una corrida"],
+["Media 100 y s = 4. Un control da 109. ¿Qué ocurre?","Supera +2s: advertencia (1_2s)","Supera +3s: rechazo (1_3s)","Está dentro de ±1s","Se infringe R_4s"],
+["Media 100 y s = 4. Un control da 113. ¿Qué regla se infringe?","1_3s (supera +3s)","1_2s solamente","R_4s","10_x"]
+];
+
+/* ---------- Verdadero / Falso [afirmación, verdadera?, explicación] ---------- */
+const TF=[
+["El control de calidad externo (CCE) es prospectivo.",false,"El CCE es retrospectivo; el CCI es el prospectivo."],
+["El CCI se realiza junto con las muestras de los pacientes.",true,""],
+["Los calibradores pueden usarse como materiales de control.",false,"Los controles deben ser distintos de los calibradores."],
+["Los controles de tercera opinión suelen tener matriz humana.",true,""],
+["El control de primera opinión es más sensible que el de tercera opinión para detectar cambios en instrumentos y reactivos.",false,"Es al revés: el de tercera opinión es más sensible."],
+["Si hay más de dos valores atípicos entre los 20 resultados, los datos no deben utilizarse.",true,""],
+["Una desviación estándar grande indica mayor precisión.",false,"DE grande = mayor variabilidad y menor precisión."],
+["La desviación estándar muestral se calcula dividiendo entre n−1.",true,""],
+["Como referencia general, un CV menor que 5% se considera deseable.",true,""],
+["La exactitud se relaciona con la cercanía al valor verdadero.",true,""],
+["Un desplazamiento suele indicar error aleatorio.",false,"Desplazamiento y tendencia suelen indicar error sistemático."],
+["La regla 1_2s es una regla de rechazo.",false,"Es una regla de advertencia."],
+["La regla 1_3s es una regla de rechazo.",true,""],
+["La regla R_4s se puede aplicar entre corridas diferentes.",false,"Solo se aplica entre dos controles de la misma corrida."],
+["La regla 2_2s sugiere error sistemático.",true,""],
+["La regla 10_x indica un desplazamiento persistente del método.",true,""],
+["Ante una regla de rechazo, se pueden liberar los resultados mientras se investiga.",false,"No se liberan resultados hasta identificar y corregir la causa."],
+["El error alfa es la falsa aceptación de una corrida con problema.",false,"Eso es el error beta; el alfa es el falso rechazo."],
+["El error perverso consiste en hacer el control sin revisar ni interpretar sus resultados.",true,""],
+["Un laboratorio con SGC tiene garantizado que no habrá errores.",false,"Un SGC ofrece detectarlos y prevenir su recurrencia."],
+["Las normas ISO agrupan los procesos del laboratorio en tres fases.",true,""],
+["El archivo de datos y los informes pertenecen a la fase preanalítica.",false,"Son de la fase postanalítica."],
+["Las siembras y el transporte de muestras pertenecen a la fase preanalítica.",true,""],
+["El producto principal del laboratorio es la información.",true,""],
+["ISO/IEC 17025 es la norma para laboratorios médicos.",false,"Esa es ISO 15189; 17025 es para ensayo y calibración."],
+["CLSI se llamaba anteriormente NCCLS.",true,""],
+["En una distribución normal, ±2s abarca aproximadamente el 68.3% de los resultados.",false,"±1s ≈ 68.3%; ±2s ≈ 95.5%; ±3s ≈ 99.7%."],
+["Un control liofilizado mal reconstituido no afecta la concentración del analito.",false,"El pipeteo incorrecto puede alterar la concentración."],
+["La especificidad es la capacidad de una prueba para identificar correctamente a quienes no tienen la enfermedad.",true,""],
+["Un falso negativo es un resultado negativo en una persona que realmente tiene la enfermedad.",true,""],
+["La veracidad compara el promedio de mediciones repetidas con un valor de referencia aceptado.",true,""],
+["El control de calidad interno evalúa principalmente la exactitud comparando laboratorios.",false,"Eso describe al CCE; el CCI vigila sobre todo precisión y estabilidad."]
+];
+
+/* ---------- Completar [oración con ___, respuestas aceptadas, explicación] ---------- */
+const FILL=[
+["La calidad de un laboratorio se define por exactitud, ___ y puntualidad.",["fiabilidad","confiabilidad"],""],
+["El sistema de calidad tiene ___ elementos clave.",["12","doce"],""],
+["Las normas ___ dividen el proceso del laboratorio en tres fases.",["ISO"],""],
+["El control de calidad ___ es prospectivo.",["interno","CCI"],""],
+["El control de calidad ___ es retrospectivo.",["externo","CCE"],""],
+["Los ___ se utilizan para ajustar el sistema de medición.",["calibradores","calibrador"],""],
+["Para establecer la media y la DE se analizan controles durante al menos ___ días.",["20","veinte"],""],
+["El ___ expresa la desviación estándar como porcentaje de la media.",["coeficiente de variación","CV"],""],
+["En una distribución normal, ≈99.7% de los resultados está entre ±___ s.",["3","tres"],""],
+["La regla ___ se infringe cuando dos controles de la misma corrida difieren en más de 4s.",["R4s","R_4s"],"R_4s sugiere error aleatorio."],
+["El error ___ afecta principalmente la exactitud.",["sistemático","sistematico"],""],
+["El error ___ afecta principalmente la precisión.",["aleatorio"],""],
+["El error ___ es el falso rechazo de una corrida aceptable.",["alfa"],""],
+["El error ___ es la falsa aceptación de una corrida con problema.",["beta"],""],
+["El gráfico de ___ permite vigilar visualmente los resultados diarios del control.",["Levey-Jennings","Levey Jennings"],""],
+["El ___ es la diferencia entre el resultado esperado y el valor de referencia.",["sesgo"],""],
+["Con media 100 y s = 4, el límite superior de +2s es ___.",["108"],"100 + 2 × 4 = 108."],
+["Con media 50 y s = 2, el CV es ___ %.",["4","4%"],"(2 / 50) × 100 = 4%."],
+["Con media 100 y s = 4, el límite inferior de −3s es ___.",["88"],"100 − 3 × 4 = 88."],
+["Según Juran, calidad significa apto para su ___.",["uso"],""],
+["Shewhart desarrolló su método estadístico en la década de ___.",["1920","20"],""],
+["La norma ISO ___ trata sobre laboratorios médicos.",["15189"],""],
+["El error ___ consiste en no realizar el control de calidad.",["imperdonable"],""],
+["Las reglas de ___ deciden si una corrida analítica se acepta o se rechaza.",["Westgard"],""]
+];
+
+/* ---------- Utilidades ---------- */
+const $=s=>document.querySelector(s);
+const app=$('#app');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;};
+const sample=(a,n)=>shuffle(a).slice(0,n);
+const norm=s=>String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9]/g,'');
+const pct=(a,b)=>b?Math.round(a*100/b):0;
+
+let S={known:{},missed:{},best:{}};
+try{const raw=JSON.parse(localStorage.getItem('cc-quiz-v1'));if(raw&&typeof raw==='object')S=Object.assign(S,raw);}catch(e){}
+const save=()=>{try{localStorage.setItem('cc-quiz-v1',JSON.stringify(S));}catch(e){}};
+const setBest=(k,v)=>{if(!k)return;S.best[k]=Math.max(S.best[k]||0,v);save();};
+
+/* ---------- Ítems ---------- */
+const mk=(pre,arr,tag)=>arr.map((r,i)=>({id:pre+i,type:'mc',tag,q:r[0],correct:r[1],wrong:r.slice(2,5),exp:''}));
+const I1=mk('a',M1,'Clase 1'), I3=mk('b',M3,'Clase 3');
+const ITF=TF.map((r,i)=>({id:'t'+i,type:'tf',tag:'Verdadero o falso',q:r[0],a:r[1],exp:r[2]}));
+const IFILL=FILL.map((r,i)=>({id:'f'+i,type:'fill',tag:'Completar',q:r[0],ans:r[1],exp:r[2]}));
+const REG={};[...I1,...I3,...ITF,...IFILL].forEach(x=>REG[x.id]=x);
+const ALL=C.map((_,i)=>i);
+function cItem(i,dir){
+  const o=sample(ALL.filter(j=>j!==i),3);
+  if(dir==='d')return{id:'k'+(i+1)+'d',type:'mc',tag:'Concepto',stem:C[i][1],q:'¿Qué concepto corresponde a esta definición?',correct:C[i][0],wrong:o.map(j=>C[j][0]),exp:''};
+  return{id:'k'+(i+1)+'t',type:'mc',tag:'Concepto',q:'¿Cuál es la definición de «'+C[i][0]+'»?',correct:C[i][1],wrong:o.map(j=>C[j][1]),exp:''};
+}
+function getItem(id){
+  const m=/^k(\d+)([dt])$/.exec(id);
+  if(m)return cItem(+m[1]-1,m[2]);
+  return REG[id]?Object.assign({},REG[id]):null;
+}
+
+/* ---------- Alcances ---------- */
+const range=(a,b)=>ALL.slice(a-1,b);
+const SC={all:'Todos · 56',d1:'Día 1 · 1–28',d2:'Día 2 · 29–56',b1:'1–14',b2:'15–28',b3:'29–42',b4:'43–56',pend:'Pendientes'};
+function scopeIdx(s){
+  switch(s){
+    case 'd1':return range(1,28);case 'd2':return range(29,56);
+    case 'b1':return range(1,14);case 'b2':return range(15,28);
+    case 'b3':return range(29,42);case 'b4':return range(43,56);
+    case 'pend':return ALL.filter(i=>!S.known[i+1]);
+    default:return ALL.slice();
+  }
+}
+const chips=(keys,cur,act)=>'<div class="chips">'+keys.map(k=>`<button class="chip ${k===cur?'on':''}" data-act="${act}" data-v="${k}">${SC[k]}</button>`).join('')+'</div>';
+
+/* ---------- Navegación ---------- */
+const VIEWS=[['inicio','Inicio'],['memorizar','Memorizar'],['pareo','Pareo'],['quiz','Quiz'],['simulacro','Simulacro'],['hoja','Hoja de repaso']];
+let ctx={},internal=false,keyHandler=null;
+function nav(v,p){ctx=p||{};internal=true;if(location.hash==='#'+v){internal=false;render();}else location.hash=v;}
+window.addEventListener('hashchange',()=>{if(!internal)ctx={};internal=false;render();});
+document.addEventListener('keydown',e=>{if(keyHandler&&!e.ctrlKey&&!e.metaKey&&!e.altKey)keyHandler(e);});
+function render(){
+  const v=(location.hash.slice(1)||'inicio');
+  const cur=VIEWS.find(x=>x[0]===v)?v:'inicio';
+  $('#nav').innerHTML=VIEWS.map(x=>`<a href="#${x[0]}" class="${x[0]===cur?'on':''}">${x[1]}</a>`).join('');
+  keyHandler=null;
+  ({inicio:vHome,memorizar:vMem,pareo:vPareo,quiz:vQuiz,simulacro:vSim,hoja:vHoja})[cur]();
+  window.scrollTo(0,0);
+}
+
+/* ---------- Inicio ---------- */
+function vHome(){
+  const kn=Object.keys(S.known).filter(k=>S.known[k]).length;
+  const ms=Object.keys(S.missed).length;
+  const b=k=>S.best[k]!=null?S.best[k]+'%':'—';
+  const st=(a,l,d)=>`<button class="step" data-act="${a}" ${d}><span>${l}</span><span>→</span></button>`;
+  app.innerHTML=`
+  <div class="stats">
+    <div class="stat"><b>${kn}/56</b><span>conceptos que ya sabes</span></div>
+    <div class="stat"><b>${ms}</b><span>preguntas falladas</span></div>
+    <div class="stat"><b>${b('sim')}</b><span>mejor simulacro</span></div>
+  </div>
+  <section class="blk">
+    <h3>Plan de 3 días</h3>
+    <div class="plan">
+      <div class="day"><h3>Día 1</h3><h2>Conceptos 1–28 y Clase 1</h2>
+        ${st('mem','Leer y marcar 1–28','data-scope="d1" data-mode="leer"')}
+        ${st('mem','Tarjetas 1–28','data-scope="d1" data-mode="cards"')}
+        ${st('pareo','Pareo 1–28','data-scope="d1"')}
+        ${st('quiz','Quiz Clase 1','data-kind="c1"')}
+      </div>
+      <div class="day"><h3>Día 2</h3><h2>Conceptos 29–56 y Clase 3</h2>
+        ${st('mem','Leer y marcar 29–56','data-scope="d2" data-mode="leer"')}
+        ${st('mem','Tarjetas 29–56','data-scope="d2" data-mode="cards"')}
+        ${st('pareo','Pareo 29–56','data-scope="d2"')}
+        ${st('quiz','Quiz Clase 3','data-kind="c3"')}
+      </div>
+      <div class="day"><h3>Día 3</h3><h2>Repaso total</h2>
+        ${st('pareo','Pareo de los 56','data-scope="all"')}
+        ${st('quiz','Verdadero o falso','data-kind="tf"')}
+        ${st('quiz','Repasar falladas ('+ms+')','data-kind="miss"')}
+        ${st('sim','Simulacro de parcial','')}
+      </div>
+    </div>
+  </section>
+  <section class="blk">
+    <h3>Cómo usarlo</h3>
+    <p class="muted">Primero lee los conceptos y marca los que ya sabes. Luego pasa a tarjetas y a pareo. Lo que falles se guarda y puedes repasarlo en Quiz. La hoja de repaso junta fórmulas, reglas de Westgard y tablas comparativas.</p>
+  </section>`;
+}
+
+/* ---------- Memorizar ---------- */
+const M={scope:'all',mode:'leer',hide:false,deck:[],flip:false,rev:false,total:0,started:false};
+function startDeck(){M.deck=shuffle(scopeIdx(M.scope));M.total=M.deck.length;M.flip=false;M.started=true;}
+function vMem(){
+  if(ctx.scope){M.scope=ctx.scope;M.mode=ctx.mode||M.mode;startDeck();ctx={};}
+  else if(!M.started)startDeck();
+  drawMem();
+}
+function drawMem(){
+  const idx=scopeIdx(M.scope);
+  const kn=idx.filter(i=>S.known[i+1]).length;
+  let h=`<section class="blk"><div><h2>Memorizar conceptos</h2><p class="muted">${kn} de ${idx.length} marcados como sabidos en este grupo.</p></div>`;
+  h+=chips(['all','d1','d2','b1','b2','b3','b4','pend'],M.scope,'mscope');
+  h+=`<div class="seg" role="group"><button class="${M.mode==='leer'?'on':''}" data-act="mmode" data-v="leer">Leer</button><button class="${M.mode==='cards'?'on':''}" data-act="mmode" data-v="cards">Tarjetas</button></div>`;
+  if(!idx.length)h+='<p class="empty">No quedan conceptos pendientes. Todos están marcados como sabidos.</p>';
+  else if(M.mode==='leer')h+=listHtml(idx);
+  else h+=cardHtml();
+  h+='</section>';
+  app.innerHTML=h;
+  keyHandler=null;
+  if(M.mode==='cards'&&idx.length&&M.deck.length){
+    keyHandler=e=>{
+      if(e.key===' '||e.key==='Enter'){e.preventDefault();M.flip=!M.flip;drawMem();}
+      else if(e.key==='ArrowRight'){e.preventDefault();got();}
+      else if(e.key==='ArrowLeft'){e.preventDefault();again();}
+    };
+  }
+}
+function listHtml(idx){
+  return `<div class="toolbar"><span class="muted">${M.hide?'Toca una fila para ver la definición.':'Lee con calma y marca los que ya dominas.'}</span><button class="btn" data-act="mhide">${M.hide?'Mostrar definiciones':'Ocultar definiciones'}</button></div>
+  <div class="list">${idx.map(i=>`<div class="row ${S.known[i+1]?'known':''}" ${M.hide?`data-act="reveal"`:''}>
+    <span class="num">${i+1}</span>
+    <div><b>${esc(C[i][0])}</b><p class="def ${M.hide?'mask':''}">${esc(C[i][1])}</p></div>
+    <button class="tick" data-act="known" data-i="${i}">${S.known[i+1]?'Lo sé':'Marcar'}</button></div>`).join('')}</div>`;
+}
+function cardHtml(){
+  if(!M.deck.length){
+    return `<div class="card res"><h2>Grupo terminado</h2><p class="muted">Pasaste por las ${M.total} tarjetas. Los conceptos marcados como «Lo sé» se guardaron.</p><div class="actions"><button class="btn primary" data-act="mrestart">Repetir grupo</button><button class="btn" data-act="mgo" data-v="pareo">Ir al pareo</button></div></div>`;
+  }
+  const i=M.deck[0];
+  const front=M.rev?C[i][1]:C[i][0], back=M.rev?C[i][0]:C[i][1];
+  const fl=M.rev&&front.length>40||!M.rev&&false;
+  const done=M.total-M.deck.length;
+  return `<div class="qhead"><span>Tarjeta ${done+1} de ${M.total}</span><span class="num">pendientes ${M.deck.length}</span></div>
+  <div class="bar"><i style="width:${pct(done,M.total)}%"></i></div>
+  <button class="flash" data-act="flip" aria-label="Voltear tarjeta">
+    <small>${M.rev?'Definición':'Concepto'} · ${i+1}</small>
+    <div class="big ${fl?'long':''}">${esc(front)}</div>
+    ${M.flip?`<div class="back ${M.rev?'short':''}">${esc(back)}</div>`:'<small>Toca para ver la respuesta</small>'}
+  </button>
+  <div class="actions"><button class="btn" data-act="again">Repasar</button><button class="btn primary" data-act="got">Lo sé</button><button class="btn" data-act="mrev">${M.rev?'Ver concepto primero':'Ver definición primero'}</button></div>
+  <p class="muted" style="font-size:13px">Atajos: espacio voltea · ← repasar · → lo sé</p>`;
+}
+function again(){if(M.deck.length>1)M.deck.push(M.deck.shift());M.flip=false;drawMem();}
+function got(){const i=M.deck.shift();if(i!=null){S.known[i+1]=true;save();}M.flip=false;drawMem();}
+function keepScroll(f){const y=window.scrollY;f();window.scrollTo(0,y);}
+
+/* ---------- Motor de preguntas ---------- */
+let Q=null;
+function runQuiz(cfg){
+  Q={title:cfg.title,key:cfg.key||null,extra:cfg.extra||null,back:cfg.back||'quiz',t0:Date.now(),i:0,res:[],answered:false,
+     items:cfg.items.map(x=>{const c=Object.assign({},x);if(c.type==='mc')c.opts=shuffle([c.correct,...c.wrong]);return c;})};
+  if(!Q.items.length){app.innerHTML='<p class="empty">No hay preguntas en este grupo todavía.</p>';return;}
+  drawQ();
+}
+function drawQ(){
+  const it=Q.items[Q.i],n=Q.items.length;
+  Q.answered=false;
+  let body;
+  if(it.type==='mc')body=it.opts.map((o,k)=>`<button class="opt" data-act="opt" data-k="${k}"><span class="k">${k+1}</span><span>${esc(o)}</span></button>`).join('');
+  else if(it.type==='tf')body=['Verdadero','Falso'].map((o,k)=>`<button class="opt" data-act="opt" data-k="${k}"><span class="k">${k?'F':'V'}</span><span>${o}</span></button>`).join('');
+  else body=`<div class="fillrow"><input id="fill" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Escribe tu respuesta" aria-label="Respuesta"><button class="btn primary" data-act="check">Comprobar</button></div>`;
+  app.innerHTML=`<section class="blk">
+    <div class="qhead"><span>${esc(Q.title)}</span><span class="num">${Q.i+1} / ${n}</span></div>
+    <div class="bar"><i style="width:${pct(Q.i,n)}%"></i></div>
+    <div class="qtag">${esc(it.part?it.part:it.tag)}</div>
+    ${it.stem?`<blockquote>${esc(it.stem)}</blockquote>`:''}
+    <h2 class="q">${esc(it.q)}</h2>
+    <div class="opts">${body}</div>
+    <div id="fb"></div>
+  </section>`;
+  const inp=$('#fill');if(inp)inp.focus();
+  keyHandler=e=>{
+    if(e.target.tagName==='INPUT'){if(e.key==='Enter'){e.preventDefault();Q.answered?nextQ():checkFill();}return;}
+    if(Q.answered){if(e.key==='Enter'||e.key===' '){e.preventDefault();nextQ();}return;}
+    if(it.type==='mc'&&/^[1-4]$/.test(e.key))pick(+e.key-1);
+    if(it.type==='tf'){const k=e.key.toLowerCase();if(k==='v'||k==='1')pick(0);if(k==='f'||k==='2')pick(1);}
+  };
+}
+function record(ok,given){
+  const it=Q.items[Q.i];Q.answered=true;Q.res.push({it,ok,given});
+  if(ok)delete S.missed[it.id];else S.missed[it.id]=1;save();
+}
+function answerText(it){return it.type==='mc'?it.correct:it.type==='tf'?(it.a?'Verdadero':'Falso'):it.ans[0];}
+function showFb(ok,fill){
+  const it=Q.items[Q.i],last=Q.i===Q.items.length-1;
+  $('#fb').innerHTML=`<div class="fb ${ok?'ok':'bad'}"><b>${ok?'Correcto':'Incorrecto'}</b>${ok?'':'Respuesta: '+esc(answerText(it))+'. '}${it.exp?esc(it.exp):''}</div>
+  <div class="actions">${fill&&!ok?'<button class="btn" data-act="override">Marcar como correcta</button>':''}<button class="btn primary" data-act="next">${last?'Ver resultado':'Siguiente'}</button></div>`;
+}
+function pick(k){
+  if(Q.answered)return;
+  const it=Q.items[Q.i];let ok,given;
+  if(it.type==='mc'){given=it.opts[k];ok=given===it.correct;}else{given=k===0;ok=given===it.a;}
+  record(ok,it.type==='mc'?given:(given?'Verdadero':'Falso'));
+  document.querySelectorAll('.opt').forEach((b,j)=>{
+    b.disabled=true;
+    const right=it.type==='mc'?it.opts[j]===it.correct:(j===0)===it.a;
+    if(right)b.classList.add('ok');else if(j===k)b.classList.add('bad');
+  });
+  showFb(ok);
+}
+function checkFill(){
+  if(Q.answered)return;
+  const inp=$('#fill'),v=inp.value;if(!norm(v))return;
+  const it=Q.items[Q.i];
+  const ok=it.ans.some(a=>norm(a)===norm(v));
+  record(ok,v);inp.readOnly=true;showFb(ok,true);
+}
+function nextQ(){Q.i++;if(Q.i>=Q.items.length)finishQ();else drawQ();}
+function finishQ(){
+  keyHandler=null;
+  const n=Q.items.length,ok=Q.res.filter(r=>r.ok).length;
+  const ex=Q.extra,score=ok+(ex?ex.score:0),total=n+(ex?ex.total:0),p=pct(score,total);
+  setBest(Q.key,p);
+  const wrong=Q.res.filter(r=>!r.ok);
+  const parts={};Q.res.forEach(r=>{const k=r.it.part;if(k){parts[k]=parts[k]||[0,0];parts[k][1]++;if(r.ok)parts[k][0]++;}});
+  const mins=Math.max(1,Math.round((Date.now()-Q.t0)/60000));
+  const partsHtml=(ex||Object.keys(parts).length)?`<div class="tw"><table><tr><th>Parte</th><th>Puntaje</th></tr>${ex?`<tr><td>${esc(ex.label)}</td><td class="f">${ex.score} / ${ex.total}</td></tr>`:''}${Object.keys(parts).map(k=>`<tr><td>${esc(k)}</td><td class="f">${parts[k][0]} / ${parts[k][1]}</td></tr>`).join('')}</table></div>`:'';
+  app.innerHTML=`<section class="blk">
+    <div class="card res"><h3>${esc(Q.title)}</h3><div class="score">${score}<span> / ${total}</span></div><p class="muted">${p}% de aciertos${Q.key==='sim'?' · '+mins+' min':''}</p>${partsHtml}
+    <div class="actions">${wrong.length?'<button class="btn primary" data-act="retry">Repetir las falladas</button>':''}<button class="btn" data-act="qback">Volver</button></div></div>
+    ${wrong.length?`<h3>Para repasar (${wrong.length})</h3><div class="res">${wrong.map(r=>`<div class="miss"><span>${r.it.stem?'<i>'+esc(r.it.stem)+'</i><br>':''}${esc(r.it.q)}</span><span class="u">Tu respuesta: ${esc(r.given)}</span><span class="a">Correcta: ${esc(answerText(r.it))}</span></div>`).join('')}</div>`:'<p class="empty">Sin errores. Buen trabajo.</p>'}
+  </section>`;
+  Q.wrongItems=wrong.map(r=>r.it);
+}
+
+/* ---------- Menú de Quiz ---------- */
+let qScope='all';
+function startQuiz(kind,scope){
+  let items,title,key;
+  const cs=scope||qScope;
+  if(kind==='cdef'||kind==='cterm'){
+    const idx=scopeIdx(cs),n=Math.min(25,idx.length);
+    items=sample(idx,n).map(i=>cItem(i,kind==='cdef'?'d':'t'));
+    title=kind==='cdef'?'Conceptos: definición a concepto':'Conceptos: concepto a definición';key=kind+cs;
+  }else if(kind==='c1'){items=shuffle(I1);title='Clase 1: calidad en el laboratorio';key='c1';}
+  else if(kind==='c3'){items=shuffle(I3);title='Clase 3: herramientas estadísticas';key='c3';}
+  else if(kind==='tf'){items=shuffle(ITF);title='Verdadero o falso';key='tf';}
+  else if(kind==='fill'){items=shuffle(IFILL);title='Completar espacios';key='fill';}
+  else{items=Object.keys(S.missed).map(getItem).filter(Boolean);title='Repaso de falladas';key=null;}
+  runQuiz({items,title,key});
+}
+function vQuiz(){
+  if(ctx.kind){const k=ctx.kind,s=ctx.scope;ctx={};startQuiz(k,s);return;}
+  const b=k=>S.best[k]!=null?` · mejor ${S.best[k]}%`:'';
+  const ms=Object.keys(S.missed).length;
+  const card=(kind,t,s)=>`<button class="mcard" data-act="quiz" data-kind="${kind}"><b>${t}</b><small>${s}</small></button>`;
+  app.innerHTML=`<section class="blk"><div><h2>Quiz</h2><p class="muted">Preguntas una por una, con respuesta inmediata. Lo que falles queda guardado.</p></div>
+  <h3>Conceptos</h3>${chips(['all','d1','d2'],qScope,'qscope')}
+  <div class="mgrid">
+    ${card('cdef','Definición a concepto','Hasta 25 preguntas'+b('cdef'+qScope))}
+    ${card('cterm','Concepto a definición','Hasta 25 preguntas'+b('cterm'+qScope))}
+  </div>
+  <h3>Clases</h3>
+  <div class="mgrid">
+    ${card('c1','Clase 1: calidad en el laboratorio',I1.length+' preguntas'+b('c1'))}
+    ${card('c3','Clase 3: herramientas estadísticas',I3.length+' preguntas'+b('c3'))}
+    ${card('tf','Verdadero o falso',ITF.length+' afirmaciones'+b('tf'))}
+    ${card('fill','Completar espacios',IFILL.length+' preguntas'+b('fill'))}
+  </div>
+  <h3>Repaso</h3>
+  <div class="mgrid">${card('miss','Falladas',ms+' pendientes de repasar')}</div></section>`;
+}
+
+/* ---------- Pareo ---------- */
+let PA=null,pScope='all';
+function runPareo(cfg){
+  const sh=shuffle(cfg.idxs),ch=[];
+  for(let i=0;i<sh.length;i+=cfg.size)ch.push(sh.slice(i,i+cfg.size));
+  if(ch.length>1&&ch[ch.length-1].length<3){const l=ch.pop();ch[ch.length-1]=ch[ch.length-1].concat(l);}
+  PA={cfg,chunks:ch,r:0,score:0,total:0};
+  startRound();
+}
+function startRound(){
+  PA.terms=PA.chunks[PA.r];PA.defs=shuffle(PA.terms);PA.assign={};PA.sel=null;PA.graded=false;PA.roundScore=0;
+  drawPareo();
+}
+const LET=j=>String.fromCharCode(65+j);
+function drawPareo(){
+  const {terms,defs,assign,sel,graded}=PA;
+  const inv={};Object.keys(assign).forEach(t=>inv[assign[t]]=+t);
+  const paired=Object.keys(assign).length;
+  const bar=graded?`Ronda calificada: <b>${PA.roundScore} / ${terms.length}</b>`:sel!==null?`Término seleccionado: <b>${sel+1}. ${esc(C[terms[sel]][0])}</b>. Elige su definición.`:'Toca un término y luego su definición. Toca una pareja para deshacerla.';
+  const tHtml=terms.map((t,i)=>{
+    let cls=sel===i?'sel':'';if(assign[i]!==undefined)cls+=' paired';
+    let extra='';
+    if(graded){const ok=assign[i]!==undefined&&defs[assign[i]]===t;cls=ok?'ok':'bad';if(!ok)extra=`<small>Correcta: ${LET(defs.indexOf(t))}</small>`;}
+    return `<button class="pt ${cls}" data-act="pt" data-i="${i}"><span class="n">${i+1}</span><span>${esc(C[t][0])}${extra}</span><span class="bdg">${assign[i]!==undefined?LET(assign[i]):''}</span></button>`;
+  }).join('');
+  const dHtml=defs.map((d,j)=>{
+    let cls=inv[j]!==undefined?'paired':'';
+    if(graded&&inv[j]!==undefined)cls=terms[inv[j]]===d?'ok':'bad';
+    return `<button class="pd ${cls}" data-act="pd" data-j="${j}"><span class="n">${LET(j)}</span><span>${esc(C[d][1])}</span><span class="bdg">${inv[j]!==undefined?inv[j]+1:''}</span></button>`;
+  }).join('');
+  const last=PA.r+1>=PA.chunks.length;
+  app.innerHTML=`<section class="blk">
+    <div class="qhead"><span>${esc(PA.cfg.title)}</span><span class="num">ronda ${PA.r+1} / ${PA.chunks.length}</span></div>
+    <div class="selbar">${bar}</div>
+    <div class="pgrid"><div><h3>Conceptos</h3>${tHtml}</div><div><h3>Definiciones</h3>${dHtml}</div></div>
+    <div class="actions">${graded?`<button class="btn primary" data-act="pnext">${last?'Ver resultado':'Siguiente ronda'}</button>`:`<button class="btn primary" data-act="pgrade">Calificar (${paired}/${terms.length} unidos)</button>`}</div>
+  </section>`;
+}
+function pareoClick(kind,n){
+  if(!PA||PA.graded)return;
+  const a=PA.assign;
+  if(kind==='pt'){
+    PA.sel=PA.sel===n?null:n;
+  }else{
+    const owner=Object.keys(a).find(t=>a[t]===n);
+    if(PA.sel===null){if(owner!==undefined)delete a[owner];}
+    else{if(owner!==undefined)delete a[owner];a[PA.sel]=n;PA.sel=null;}
+  }
+  keepScroll(drawPareo);
+}
+function gradePareo(){
+  if(PA.graded)return;
+  let c=0;
+  PA.terms.forEach((t,i)=>{
+    const ok=PA.assign[i]!==undefined&&PA.defs[PA.assign[i]]===t;
+    const id='k'+(t+1)+'d';
+    if(ok){c++;delete S.missed[id];}else S.missed[id]=1;
+  });
+  PA.roundScore=c;PA.score+=c;PA.total+=PA.terms.length;PA.graded=true;save();
+  drawPareo();window.scrollTo(0,0);
+}
+function nextRound(){
+  if(PA.r+1<PA.chunks.length){PA.r++;startRound();window.scrollTo(0,0);}
+  else finishPareo();
+}
+function finishPareo(){
+  if(PA.cfg.onDone){PA.cfg.onDone(PA.score,PA.total);return;}
+  const p=pct(PA.score,PA.total);setBest(PA.cfg.key,p);
+  app.innerHTML=`<section class="blk"><div class="card res"><h3>${esc(PA.cfg.title)}</h3><div class="score">${PA.score}<span> / ${PA.total}</span></div><p class="muted">${p}% de parejas correctas</p>
+  <div class="actions"><button class="btn primary" data-act="pareo" data-scope="${pScope}">Otra vuelta</button><button class="btn" data-act="go" data-v="quiz">Ir al quiz</button></div></div></section>`;
+}
+function vPareo(){
+  if(ctx.scope){pScope=ctx.scope;ctx={};startPareo();return;}
+  const b=k=>S.best[k]!=null?` Mejor resultado: ${S.best[k]}%.`:'';
+  app.innerHTML=`<section class="blk"><div><h2>Pareo</h2><p class="muted">Rondas de 8 conceptos y 8 definiciones mezcladas, como en el parcial. Une cada concepto con su letra.${b('pareo'+pScope)}</p></div>
+  ${chips(['all','d1','d2'],pScope,'pscope')}
+  <div class="actions"><button class="btn primary" data-act="pstart">Empezar</button></div></section>`;
+}
+function startPareo(){runPareo({idxs:scopeIdx(pScope),size:8,title:'Pareo · '+SC[pScope],key:'pareo'+pScope});}
+
+/* ---------- Simulacro ---------- */
+function vSim(){
+  if(ctx.go){ctx={};startSim();return;}
+  app.innerHTML=`<section class="blk"><div><h2>Simulacro de parcial</h2><p class="muted">Una sola pasada, sin pistas, con formato de parcial. Haz este simulacro el día 3, después de repasar las falladas.</p></div>
+  <div class="tw"><table><tr><th>Parte</th><th>Contenido</th><th>Ítems</th></tr>
+  <tr><td>A</td><td>Pareo de conceptos</td><td class="f">10</td></tr>
+  <tr><td>B</td><td>Verdadero o falso</td><td class="f">10</td></tr>
+  <tr><td>C</td><td>Opción múltiple (Clases 1 y 3)</td><td class="f">15</td></tr>
+  <tr><td>D</td><td>Completar espacios</td><td class="f">8</td></tr></table></div>
+  <p class="muted">Mejor resultado: ${S.best.sim!=null?S.best.sim+'%':'aún sin intentos'}</p>
+  <div class="actions"><button class="btn primary" data-act="sim">Empezar simulacro</button></div></section>`;
+}
+function startSim(){
+  const tag=(arr,part)=>arr.map(x=>Object.assign({},x,{part}));
+  const items=[...tag(sample(ITF,10),'Parte B · Verdadero o falso'),...tag(sample([...I1,...I3],15),'Parte C · Opción múltiple'),...tag(sample(IFILL,8),'Parte D · Completar')];
+  runPareo({idxs:sample(ALL,10),size:10,title:'Simulacro · Parte A · Pareo',key:null,
+    onDone:(sc,tot)=>runQuiz({items,title:'Simulacro',key:'sim',back:'simulacro',extra:{score:sc,total:tot,label:'Parte A · Pareo'}})});
+}
+
+/* ---------- Hoja de repaso ---------- */
+function vHoja(){
+  app.innerHTML=`<div class="sheet">
+  <section><h2>Definiciones de calidad</h2>
+  <div class="tw"><table>
+  <tr><th>Autor</th><th>Calidad es…</th></tr>
+  <tr><td>Laboratorio</td><td>Exactitud, fiabilidad y puntualidad de los resultados</td></tr>
+  <tr><td>ANSI/ASQC</td><td>Totalidad de rasgos y características de un producto o servicio que satisfacen necesidades dadas</td></tr>
+  <tr><td>Juran</td><td>Apto para su uso</td></tr>
+  <tr><td>Crosby</td><td>Conformidad con los requisitos</td></tr>
+  <tr><td>Deming</td><td>Dirigida a las necesidades del cliente</td></tr></table></div></section>
+
+  <section><h2>Fases del proceso (ISO)</h2>
+  <div class="cols3">
+  <div class="card"><h3>Preanalítica</h3><ul><li>Clasificación</li><li>Derivaciones</li><li>Solicitud</li><li>Extracción de muestras</li><li>Recepción de muestras</li><li>Transporte de muestras</li><li>Siembras</li></ul></div>
+  <div class="card"><h3>Analítica</h3><ul><li>Hematología</li><li>Bioquímica</li><li>Microbiología</li><li>Genética</li><li>Técnicas manuales y automáticas</li><li>Control de calidad</li><li>Validación técnica</li><li>Urgencias</li></ul></div>
+  <div class="card"><h3>Postanalítica</h3><ul><li>Repositorio de muestras</li><li>Archivo de datos</li><li>Gestión de la calidad</li><li>Estadísticas</li><li>Informes</li><li>Almacén de resultados</li></ul></div>
+  </div></section>
+
+  <section><h2>12 elementos clave del sistema de calidad</h2>
+  <div class="tw"><table>
+  <tr><th>#</th><th>Elemento</th><th>Idea clave</th></tr>
+  <tr><td class="f">1</td><td>Organización</td><td>Estructura y dirección que facilitan las políticas de calidad; compromiso de la dirección</td></tr>
+  <tr><td class="f">2</td><td>Personal</td><td>Recurso más importante: competente y motivado</td></tr>
+  <tr><td class="f">3</td><td>Equipos</td><td>Selección, instalación, validación y mantenimiento</td></tr>
+  <tr><td class="f">4</td><td>Compras e inventario</td><td>Disponibilidad y calidad de reactivos y suministros; almacenamiento</td></tr>
+  <tr><td class="f">5</td><td>Gestión de procesos</td><td>Control de calidad, manejo de muestras, verificación y validación de métodos</td></tr>
+  <tr><td class="f">6</td><td>Gestión de la información</td><td>Exactitud, confidencialidad y accesibilidad</td></tr>
+  <tr><td class="f">7</td><td>Documentos y registros</td><td>Explican cómo hacer las cosas; registros exactos y accesibles</td></tr>
+  <tr><td class="f">8</td><td>Gestión de incidencias</td><td>Detectar, manejar y aprender de errores o eventos no deseados</td></tr>
+  <tr><td class="f">9</td><td>Evaluación</td><td>Comparar con normas, análisis comparativos u otros laboratorios; interna o externa</td></tr>
+  <tr><td class="f">10</td><td>Mejora continua de procesos</td><td>Meta principal del SGC</td></tr>
+  <tr><td class="f">11</td><td>Servicio al cliente</td><td>El laboratorio es una empresa de servicios</td></tr>
+  <tr><td class="f">12</td><td>Seguridad e instalaciones</td><td>Seguridad, contención, protección y ergonomía</td></tr></table></div>
+  <p class="muted">Para memorizar: 1–4 son recursos (Organización, Personal, Equipos, Compras). 5–8 son el trabajo diario (Procesos, Información, Documentos, Incidencias). 9–12 son la mejora (Evaluación, Mejora, Servicio, Seguridad).</p></section>
+
+  <section><h2>Normas e historia</h2>
+  <div class="tw"><table>
+  <tr><td>ISO 9001:2015</td><td>Requisitos generales del sistema de gestión de la calidad</td></tr>
+  <tr><td>ISO 15189</td><td>Laboratorios médicos: requisitos de calidad y competencia</td></tr>
+  <tr><td>ISO/IEC 17025</td><td>Competencia de laboratorios de ensayo y calibración</td></tr>
+  <tr><td>CLSI (antes NCCLS)</td><td>Normas por consenso; modelo de 12 elementos compatible con ISO</td></tr>
+  <tr><td>Otras</td><td>CAP, The Joint Commission, COLA, OMS</td></tr>
+  <tr><td>Shewhart</td><td>Década de 1920: gestión de procesos estadísticos; en laboratorios desde la de 1940</td></tr>
+  <tr><td>Otros innovadores</td><td>Feigenbaum, Ishikawa, Taguchi; Galvin (reducción de errores a microescala)</td></tr></table></div></section>
+
+  <section><h2>CCI frente a CCE</h2>
+  <div class="tw"><table>
+  <tr><th></th><th>Interno (CCI)</th><th>Externo (CCE)</th></tr>
+  <tr><td>Momento</td><td>Prospectivo</td><td>Retrospectivo</td></tr>
+  <tr><td>Evalúa</td><td>Precisión y estabilidad</td><td>Exactitud</td></tr>
+  <tr><td>Cómo</td><td>Junto con las muestras de pacientes</td><td>Comparación entre laboratorios</td></tr></table></div></section>
+
+  <section><h2>Calibrador, control, primera y tercera opinión</h2>
+  <div class="tw"><table>
+  <tr><th></th><th>Calibrador</th><th>Control</th></tr>
+  <tr><td>Para qué</td><td>Ajustar el sistema de medición</td><td>Verificar de forma independiente que el sistema funciona</td></tr>
+  <tr><td>Origen</td><td>Generalmente del fabricante</td><td>Debe ser distinto del calibrador</td></tr></table></div>
+  <div class="tw"><table>
+  <tr><th></th><th>Primera opinión</th><th>Tercera opinión</th></tr>
+  <tr><td>Diseño</td><td>Para un sistema específico</td><td>No optimizado para un sistema</td></tr>
+  <tr><td>Evaluación</td><td>Depende del fabricante</td><td>Independiente del fabricante</td></tr>
+  <tr><td>Sensibilidad a cambios</td><td>Menor</td><td>Mayor</td></tr>
+  <tr><td>Lote</td><td>Suele cambiar con el lote de reactivo</td><td>Mismo lote por periodo prolongado</td></tr>
+  <tr><td>Extras</td><td>CCI limitado</td><td>Matriz humana, comparación entre laboratorios, Seis Sigma</td></tr></table></div></section>
+
+  <section><h2>Fórmulas</h2>
+  <div class="tw"><table>
+  <tr><td>Media</td><td class="f">X̄ = (X₁ + X₂ + … + Xₙ) / n</td></tr>
+  <tr><td>Desviación estándar</td><td class="f">s = √[ Σ(Xᵢ − X̄)² / (n − 1) ]</td></tr>
+  <tr><td>Coeficiente de variación</td><td class="f">CV (%) = (s / X̄) × 100</td></tr>
+  <tr><td>Sesgo</td><td class="f">resultado esperado − valor de referencia</td></tr>
+  <tr><td>IDS</td><td class="f">(resultado − media) / s</td></tr>
+  <tr><td>Límites de control</td><td class="f">X̄ ± 1s, X̄ ± 2s, X̄ ± 3s</td></tr>
+  <tr><td>Distribución normal</td><td class="f">±1s ≈ 68.3% · ±2s ≈ 95.5% · ±3s ≈ 99.7%</td></tr></table></div>
+  <p class="muted">Ejemplo del resumen: datos 4.0, 4.1, 4.0, 4.2, 4.1, 4.1, 4.2. Media 4.1 y s 0.1. Entonces ±1s = 4.0 a 4.2, ±2s = 3.9 a 4.3, ±3s = 3.8 a 4.4 y CV ≈ 2.44%. CV deseable: menor que 5%.</p>
+  <p class="muted">Diseño del CCI: verificar equipo y reactivos, estandarizar, analizar controles al menos 20 días, revisar valores aberrantes (más de 2 en 20 invalida los datos), calcular media, DE y CV, IDS, graficar Levey-Jennings y aplicar Westgard.</p></section>
+
+  <section><h2>Reglas de Westgard</h2>
+  <div class="tw"><table>
+  <tr><th>Regla</th><th>Qué significa</th><th>Tipo</th><th>Decisión</th></tr>
+  <tr><td class="f">1₂ₛ</td><td>Un resultado supera ±2s</td><td>—</td><td><span class="tag adv">Advertencia</span></td></tr>
+  <tr><td class="f">1₃ₛ</td><td>Un resultado supera ±3s</td><td>Aleatorio</td><td><span class="tag rej">Rechazo</span></td></tr>
+  <tr><td class="f">2₂ₛ</td><td>Dos consecutivos superan 2s del mismo lado</td><td>Sistemático</td><td><span class="tag rej">Rechazo</span></td></tr>
+  <tr><td class="f">R₄ₛ</td><td>Dos controles de la misma corrida difieren más de 4s</td><td>Aleatorio</td><td><span class="tag rej">Rechazo</span></td></tr>
+  <tr><td class="f">4₁ₛ</td><td>Cuatro consecutivos superan 1s del mismo lado</td><td>Sistemático</td><td><span class="tag rej">Rechazo</span></td></tr>
+  <tr><td class="f">10ₓ</td><td>Diez consecutivos del mismo lado de la media</td><td>Sistemático</td><td><span class="tag rej">Rechazo</span></td></tr></table></div>
+  <p class="muted">Ante un rechazo: no liberar resultados, revisar controles, reactivos e instrumento, investigar calibración, pipeteo, temperatura, tiempo y lotes, corregir y repetir los controles.</p></section>
+
+  <section><h2>Errores</h2>
+  <div class="tw"><table>
+  <tr><th></th><th>Aleatorio</th><th>Sistemático</th></tr>
+  <tr><td>Qué es</td><td>Variación impredecible, alta o baja</td><td>Desviación constante en una dirección</td></tr>
+  <tr><td>Afecta</td><td>Precisión</td><td>Exactitud</td></tr>
+  <tr><td>Se ve como</td><td>Dispersión irregular</td><td>Desplazamiento o tendencia</td></tr>
+  <tr><td>Causas</td><td>Pipeteo, tiempo, temperatura, luz, inestabilidad ocasional</td><td>Calibración, cambio de lote (reactivo, calibrador, control), instrumento, preparación incorrecta</td></tr></table></div>
+  <div class="tw"><table>
+  <tr><td>Error alfa</td><td>Falso rechazo de una corrida aceptable</td></tr>
+  <tr><td>Error beta</td><td>Falsa aceptación de una corrida con problema</td></tr>
+  <tr><td>Error imperdonable</td><td>No realizar el control de calidad</td></tr>
+  <tr><td>Error perverso</td><td>Hacer el control y no revisar ni interpretar sus resultados</td></tr></table></div></section>
+  </div>`;
+}
+
+/* ---------- Clics ---------- */
+const acts={
+  mem:d=>nav('memorizar',{scope:d.scope,mode:d.mode}),
+  pareo:d=>nav('pareo',{scope:d.scope}),
+  quiz:d=>nav('quiz',{kind:d.kind}),
+  sim:()=>nav('simulacro',{go:1}),
+  go:d=>nav(d.v),
+  mscope:d=>{M.scope=d.v;startDeck();drawMem();},
+  mmode:d=>{M.mode=d.v;drawMem();},
+  mhide:()=>keepScroll(()=>{M.hide=!M.hide;drawMem();}),
+  reveal:(d,b)=>{const p=b.querySelector('.def');if(p)p.classList.toggle('show');},
+  known:d=>keepScroll(()=>{const n=+d.i+1;S.known[n]=!S.known[n];save();drawMem();}),
+  flip:()=>{M.flip=!M.flip;drawMem();},
+  again:again,got:got,
+  mrev:()=>{M.rev=!M.rev;M.flip=false;drawMem();},
+  mrestart:()=>{startDeck();drawMem();},
+  mgo:d=>nav(d.v),
+  qscope:d=>{qScope=d.v;vQuiz();},
+  opt:d=>pick(+d.k),
+  check:checkFill,
+  next:nextQ,
+  override:()=>{const r=Q.res[Q.res.length-1];if(r&&!r.ok){r.ok=true;delete S.missed[r.it.id];save();const f=$('#fb .fb');if(f){f.className='fb ok';f.innerHTML='<b>Correcto</b>Marcada como correcta.';}const o=$('[data-act="override"]');if(o)o.remove();}},
+  retry:()=>runQuiz({items:Q.wrongItems,title:'Repaso de falladas',key:null,back:Q.back}),
+  qback:()=>nav(Q&&Q.back||'quiz'),
+  pt:d=>pareoClick('pt',+d.i),
+  pd:d=>pareoClick('pd',+d.j),
+  pgrade:gradePareo,pnext:nextRound,
+  pscope:d=>{pScope=d.v;vPareo();},
+  pstart:startPareo
+};
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');
+  if(b&&acts[b.dataset.act])acts[b.dataset.act](b.dataset,b);
+});
+render();
+})();
+</script>
+
+</body></html>
